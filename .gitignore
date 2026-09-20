@@ -1,0 +1,22 @@
+# Sistema operativo y temporales
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Archivos pesados originales no necesarios para la web (evita subir PDFs pesados a GitHub)
+*.pdf
+suelosnoa.geojson
+
+# Entornos virtuales
+.venv/
+env/
+venv/
+ENV/

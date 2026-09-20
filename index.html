@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas de Suelos del NOA | Salta y Jujuy — INTA - UNSa</title>
+  <meta name="description" content="Dashboard cartográfico interactivo de los suelos de Salta y Jujuy con perfiles de horizontes, capacidad de uso y análisis de laboratorio. Estudio Nadir & Chafatinos (INTA - UNSa).">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>">
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css?v=5">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- =========================================================================
+       Encabezado Principal
+       ========================================================================= -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-icon">
+        <i data-lucide="layers"></i>
+      </div>
+      <div class="brand-titles">
+        <h1>Suelos del NOA <span class="brand-badge">SIG INTA-UNSa</span></h1>
+        <p>
+          <span>Salta y Jujuy</span> • 
+          <span>Nadir A. & Chafatinos T.</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Buscador predictivo global -->
+    <div class="search-container">
+      <div class="search-input-wrapper">
+        <i data-lucide="search" class="search-icon"></i>
+        <input type="text" id="searchInput" class="search-input" placeholder="Buscar por suelo, código (ej: Be, Ac), o localidad..." autocomplete="off">
+        <button id="searchClearBtn" class="search-clear-btn" title="Limpiar búsqueda">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div id="searchSuggestions" class="search-suggestions"></div>
+    </div>
+
+    <!-- Acciones y Métricas -->
+    <div class="header-actions">
+      <div class="stat-pill" title="Total de polígonos mapeados">
+        <i data-lucide="map-pin"></i>
+        <span>Polígonos: <strong id="totalPolygons">784</strong></span>
+      </div>
+      <div class="stat-pill" title="Unidades cartográficas edafológicas">
+        <i data-lucide="file-spreadsheet"></i>
+        <span>Unidades: <strong id="totalUnits">216</strong></span>
+      </div>
+      <button id="btnOpenFilters" class="btn-icon-text" title="Filtros y estadísticas">
+        <i data-lucide="filter"></i>
+        <span>Filtros</span>
+      </button>
+      <button id="btnInfoModal" class="btn-icon-text" title="Información y Créditos">
+        <i data-lucide="info"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       Área de Trabajo: Mapa + Controles
+       ========================================================================= -->
+  <main class="main-wrapper">
+    <!-- Contenedor Leaflet -->
+    <div id="map"></div>
+
+    <!-- Selector de Capas Temáticas Flotante -->
+    <div class="map-thematic-bar">
+      <button class="thematic-tab active" data-theme="grupo_tier">
+        <i data-lucide="award"></i> Grupo de Tierra (Aptitud)
+      </button>
+      <button class="thematic-tab" data-theme="usda_orden">
+        <i data-lucide="compass"></i> Orden USDA
+      </button>
+      <button class="thematic-tab" data-theme="clas_fao">
+        <i data-lucide="globe"></i> Clasificación FAO
+      </button>
+      <button class="thematic-tab" data-theme="reg_geo">
+        <i data-lucide="mountain"></i> Región Geográfica
+      </button>
+      <button class="thematic-tab" data-theme="transparente">
+        <i data-lucide="scan"></i> Solo Límites (Transparente)
+      </button>
+    </div>
+
+    <!-- Herramientas Rápidas del Mapa (Derecha) -->
+    <div class="map-quick-tools">
+      <button id="btnResetBounds" class="map-tool-btn" title="Restablecer vista a Salta y Jujuy">
+        <i data-lucide="maximize-2"></i>
+      </button>
+      <button id="btnToggleBasemap" class="map-tool-btn" title="Cambiar mapa base (Satélite / Relieve / Vectorial)">
+        <i data-lucide="map"></i>
+      </button>
+      <button id="btnLocateUser" class="map-tool-btn" title="Mi ubicación">
+        <i data-lucide="crosshair"></i>
+      </button>
+    </div>
+
+    <!-- Leyenda Interactiva Flotante -->
+    <div class="map-legend-card" id="legendCard">
+      <div class="legend-header" id="legendHeader">
+        <span class="legend-title" id="legendTitle">Grupo de la Tierra</span>
+        <i data-lucide="chevron-up" id="legendChevron"></i>
+      </div>
+      <div class="legend-items" id="legendItems"></div>
+    </div>
+
+    <!-- =======================================================================
+         Drawer Izquierdo: Filtros & Analíticas
+         ======================================================================= -->
+    <aside class="filter-drawer" id="filterDrawer">
+      <div class="drawer-header">
+        <h2><i data-lucide="sliders-horizontal"></i> Filtros y Estadísticas</h2>
+        <button class="drawer-close-btn" id="btnCloseFilter">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="filter-drawer-content">
+        <!-- Filtro Orden USDA -->
+        <div class="filter-group">
+          <label for="filterUsda">Orden Taxonómico USDA</label>
+          <select id="filterUsda" class="filter-select">
+            <option value="ALL">Todos los órdenes</option>
+          </select>
+        </div>
+
+        <!-- Filtro Grupo de Tierra -->
+        <div class="filter-group">
+          <label for="filterGrupo">Grupo de la Tierra (Aptitud)</label>
+          <select id="filterGrupo" class="filter-select">
+            <option value="ALL">Todos los grupos</option>
+          </select>
+        </div>
+
+        <!-- Filtro Región Geográfica -->
+        <div class="filter-group">
+          <label for="filterRegion">Región Geográfica</label>
+          <select id="filterRegion" class="filter-select">
+            <option value="ALL">Todas las regiones</option>
+          </select>
+        </div>
+
+        <!-- Botón Reset Filtros -->
+        <button id="btnResetFilters" class="btn-icon-text" style="justify-content: center; width: 100%;">
+          <i data-lucide="rotate-ccw"></i> Restablecer Filtros
+        </button>
+
+        <!-- Gráfico de distribución de órdenes -->
+        <div class="chart-card">
+          <h3>Distribución por Orden USDA (km²)</h3>
+          <div style="height: 190px; position: relative;">
+            <canvas id="chartUsdaDist"></canvas>
+          </div>
+        </div>
+
+        <!-- Gráfico de aptitud de tierra -->
+        <div class="chart-card">
+          <h3>Distribución por Grupo de Tierra (ha)</h3>
+          <div style="height: 190px; position: relative;">
+            <canvas id="chartGrupoDist"></canvas>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- =======================================================================
+         Drawer Derecho: Inspección Detallada ("Cajitas cosas lindas")
+         ======================================================================= -->
+    <aside class="detail-drawer" id="detailDrawer">
+      <!-- Encabezado de la Unidad -->
+      <div class="detail-header">
+        <div class="detail-title-wrap">
+          <div class="detail-badge-row">
+            <span class="badge-code" id="detBadgeCode">--</span>
+            <span class="badge-group" id="detBadgeGroup">Grupo --</span>
+            <span class="badge-region" id="detBadgeRegion">--</span>
+          </div>
+          <h2 id="detTitle">Seleccione un suelo en el mapa</h2>
+        </div>
+        <div class="detail-actions">
+          <button class="btn-download-ficha" id="btnOpenExportModal" title="Descargar Ficha Completa con todos los suelos, horizontes y laboratorio">
+            <i data-lucide="file-down"></i>
+            <span>Descargar Ficha</span>
+          </button>
+          <button class="map-tool-btn" id="btnCloseDetail" title="Cerrar">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Selector Rápido de Suelo Componente de la Asociación -->
+      <div class="detail-soil-selector-bar" id="detailSoilSelectorBar">
+        <span class="soil-bar-label"><i data-lucide="layers"></i> Suelo:</span>
+        <div class="soil-bar-pills" id="detailSoilPills"></div>
+      </div>
+
+      <!-- Navegación por Pestañas del Detalle -->
+      <nav class="detail-tabs-nav">
+        <button class="detail-tab-btn active" data-tab="tab-resumen">
+          <i data-lucide="layout-grid"></i> Visión General
+        </button>
+        <button class="detail-tab-btn" data-tab="tab-aptitud">
+          <i data-lucide="check-circle-2"></i> Aptitud & Capacidad
+        </button>
+        <button class="detail-tab-btn" data-tab="tab-suelos">
+          <i data-lucide="git-branch"></i> Suelos Asociados
+        </button>
+        <button class="detail-tab-btn" data-tab="tab-perfil">
+          <i data-lucide="columns"></i> Perfil de Horizontes
+        </button>
+        <button class="detail-tab-btn" data-tab="tab-laboratorio">
+          <i data-lucide="flask-conical"></i> Laboratorio
+        </button>
+      </nav>
+
+      <!-- Contenido de las Pestañas -->
+      <div class="detail-tab-content">
+        
+        <!-- PESTAÑA 1: VISIÓN GENERAL -->
+        <div class="tab-pane active" id="tab-resumen">
+          <!-- Banner Destacado para Descargar Ficha -->
+          <div class="cajita-download-banner">
+            <div class="download-banner-text">
+              <h4>📄 Ficha Integral Descargable</h4>
+              <p>Informe completo con todos los suelos asociados, perfiles modales de horizontes y tablas de laboratorio físico-químico.</p>
+            </div>
+            <button class="btn-download-action" id="btnDownloadFichaBanner">
+              <i data-lucide="download"></i> Descargar Ficha
+            </button>
+          </div>
+
+          <!-- Cajita Indicadores Clave -->
+          <div class="cajita">
+            <div class="cajita-title">
+              <i data-lucide="activity"></i> Indicadores del Polígono
+            </div>
+            <div class="metrics-mini-grid">
+              <div class="mini-metric-item">
+                <div class="mini-metric-label">Superficie Polígono</div>
+                <div class="mini-metric-val" id="detAreaKm">-- km²</div>
+              </div>
+              <div class="mini-metric-item">
+                <div class="mini-metric-label">Hectáreas</div>
+                <div class="mini-metric-val" id="detAreaHa">-- ha</div>
+              </div>
+              <div class="mini-metric-item">
+                <div class="mini-metric-label">Cuenca Hidrográfica</div>
+                <div class="mini-metric-val" id="detCuenca">--</div>
+              </div>
+              <div class="mini-metric-item">
+                <div class="mini-metric-label">Orden Taxonómico</div>
+                <div class="mini-metric-val" id="detOrdenTaxo">--</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cajita Ubicación y Fisiografía -->
+          <div class="cajita">
+            <div class="cajita-title">
+              <i data-lucide="map-pinned"></i> Ubicación Geográfica & Paisaje
+            </div>
+            <p class="cajita-text" id="detUbicacion">--</p>
+            <div class="metrics-mini-grid" style="margin-top: 0.85rem;">
+              <div class="mini-metric-item">
+                <div class="mini-metric-label">Fisiografía</div>
+                <div class="mini-metric-val" style="font-size: 0.82rem;" id="detFisiografia">--</div>
+              </div>
+              <div class="mini-metric-item">
+                <div class="mini-metric-label">Relieve</div>
+                <div class="mini-metric-val" style="font-size: 0.82rem;" id="detRelieve">--</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cajita Clima y Vegetación -->
+          <div class="cajita">
+            <div class="cajita-title">
+              <i data-lucide="sun"></i> Clima & Bioma Nativo
+            </div>
+            <div class="metrics-mini-grid" style="margin-bottom: 0.75rem;">
+              <div class="mini-metric-item">
+                <div class="mini-metric-label">Régimen Térmico</div>
+                <div class="mini-metric-val" style="font-size: 0.82rem;" id="detTemperatura">--</div>
+              </div>
+              <div class="mini-metric-item">
+                <div class="mini-metric-label">Lluvias Anuales</div>
+                <div class="mini-metric-val" style="font-size: 0.82rem;" id="detPrecipitacion">--</div>
+              </div>
+            </div>
+            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem;">VEGETACIÓN CARACTERÍSTICA</div>
+            <p class="cajita-text" id="detVegetacion">--</p>
+          </div>
+
+          <!-- Cajita Material Original Geológico -->
+          <div class="cajita">
+            <div class="cajita-title">
+              <i data-lucide="pickaxe"></i> Material Geológico Original
+            </div>
+            <p class="cajita-text" id="detMaterial">--</p>
+          </div>
+        </div>
+
+        <!-- PESTAÑA 2: APTITUD & CAPACIDAD -->
+        <div class="tab-pane" id="tab-aptitud">
+          <!-- Banner de Aptitud Productiva -->
+          <div class="suitability-banner C" id="detSuitabilityBanner">
+            <div class="suitability-icon-wrap" id="detSuitabilityIcon">C</div>
+            <div class="suitability-info">
+              <h4 id="detSuitabilityTitle">Grupo de Aptitud</h4>
+              <p id="detSuitabilitySubtitle">Capacidad de uso y potencial agropecuario</p>
+            </div>
+          </div>
+
+          <!-- Diagnóstico y Limitaciones de Manejo -->
+          <div class="cajita">
+            <div class="cajita-title">
+              <i data-lucide="shield-alert"></i> Diagnóstico y Recomendaciones de Manejo
+            </div>
+            <p class="cajita-text" id="detGrupoDesc">--</p>
+          </div>
+
+          <!-- Capacidad y Clases de Uso de los Suelos -->
+          <div class="cajita">
+            <div class="cajita-title">
+              <i data-lucide="list-checks"></i> Clasificación por Clases de Capacidad
+            </div>
+            <div id="detClasesList" style="display: flex; flex-direction: column; gap: 0.6rem;"></div>
+          </div>
+        </div>
+
+        <!-- PESTAÑA 3: SUELOS ASOCIADOS -->
+        <div class="tab-pane" id="tab-suelos">
+          <!-- Selector de Suelos Asociados -->
+          <div class="soil-subselector" id="soilSubselector"></div>
+
+          <!-- Ficha del Suelo Seleccionado -->
+          <div class="cajita" id="selectedSoilCard">
+            <div class="cajita-title" id="selectedSoilTitle">
+              <i data-lucide="disc"></i> Suelo Dominante
+            </div>
+            <div class="metrics-mini-grid" style="margin-bottom: 0.85rem;">
+              <div class="mini-metric-item">
+                <div class="mini-metric-label">Taxonomía USDA</div>
+                <div class="mini-metric-val" style="font-size: 0.85rem;" id="selectedSoilUsda">--</div>
+              </div>
+              <div class="mini-metric-item">
+                <div class="mini-metric-label">Taxonomía FAO</div>
+                <div class="mini-metric-val" style="font-size: 0.85rem;" id="selectedSoilFao">--</div>
+              </div>
+            </div>
+
+            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem;">CARACTERÍSTICAS PRINCIPALES</div>
+            <p class="cajita-text" id="selectedSoilCaract" style="margin-bottom: 0.85rem;">--</p>
+
+            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem;">LIMITACIONES AGRONÓMICAS</div>
+            <p class="cajita-text" id="selectedSoilLimit" style="margin-bottom: 0.85rem;">--</p>
+
+            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem;">CLASE DE CAPACIDAD DE USO</div>
+            <p class="cajita-text" id="selectedSoilClase">--</p>
+          </div>
+        </div>
+
+        <!-- PESTAÑA 4: PERFIL GRÁFICO DE HORIZONTES -->
+        <div class="tab-pane" id="tab-perfil">
+          <div class="cajita">
+            <div class="cajita-title">
+              <i data-lucide="layers"></i> Perfil Modal Estratigráfico
+            </div>
+            <p class="cajita-text" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.8rem;">
+              Representación vertical de los horizontes a escala de profundidad. Toque cada horizonte para ver su color Munsell, textura y morfología.
+            </p>
+
+            <!-- Columna visual del suelo -->
+            <div class="horizon-column-container">
+              <div class="horizon-ruler" id="horizonRuler">
+                <span>0 cm</span>
+                <span>50 cm</span>
+                <span>100 cm</span>
+                <span>150 cm</span>
+                <span>200 cm</span>
+              </div>
+              <div class="horizon-layers-wrap" id="horizonLayersWrap">
+                <!-- Capas generadas dinámicamente -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Detalle del horizonte seleccionado -->
+          <div class="cajita" id="horizonModalDetailCard" style="display: none;">
+            <div class="cajita-title" id="horizonDetailTitle">
+              <i data-lucide="eye"></i> Detalle del Horizonte
+            </div>
+            <p class="cajita-text" id="horizonDetailText">--</p>
+          </div>
+        </div>
+
+        <!-- PESTAÑA 5: LABORATORIO FÍSICO-QUÍMICO -->
+        <div class="tab-pane" id="tab-laboratorio">
+          <div id="noLabAlert" class="cajita" style="display: none;">
+            <div class="cajita-title" style="color: var(--warning);">
+              <i data-lucide="alert-triangle"></i> Relevamiento sin Perfil Modal Analítico
+            </div>
+            <p class="cajita-text">
+              Esta unidad cartográfica fue clasificada por correlación morfológica de campo y no requirió determinaciones analíticas de laboratorio en la campaña original.
+            </p>
+          </div>
+
+          <div id="labContentWrap">
+            <!-- Gráfico de pH y Materia Orgánica -->
+            <div class="cajita">
+              <div class="cajita-title">
+                <i data-lucide="trending-up"></i> Perfil de pH y Materia Orgánica (%)
+              </div>
+              <div class="chart-container-sm">
+                <canvas id="chartLabPhMo"></canvas>
+              </div>
+            </div>
+
+            <!-- Gráfico de Granulometría (Arena, Limo, Arcilla) -->
+            <div class="cajita">
+              <div class="cajita-title">
+                <i data-lucide="bar-chart-3"></i> Textura: Fracciones Granulométricas (%)
+              </div>
+              <div class="chart-container-sm">
+                <canvas id="chartLabTextura"></canvas>
+              </div>
+            </div>
+
+            <!-- Gráfico de Complejo de Cambio y CIC -->
+            <div class="cajita">
+              <div class="cajita-title">
+                <i data-lucide="zap"></i> Capacidad de Intercambio Catiónico & Bases
+              </div>
+              <div class="chart-container-sm">
+                <canvas id="chartLabCic"></canvas>
+              </div>
+            </div>
+
+            <!-- Tabla Analítica Completa -->
+            <div class="cajita">
+              <div class="cajita-title">
+                <i data-lucide="table"></i> Matriz Completa de Laboratorio
+              </div>
+              <div class="lab-table-wrap">
+                <table class="lab-table" id="labFullTable">
+                  <thead></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+  </main>
+
+  <!-- =========================================================================
+       Modal de Exportación / Descarga de Ficha
+       ========================================================================= -->
+  <div class="modal-overlay" id="exportModal">
+    <div class="modal-card" style="max-width: 560px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem;">
+        <div>
+          <h2>Descargar Ficha Técnica</h2>
+          <p style="margin-bottom: 0; color: var(--accent); font-weight: 600;" id="exportModalSubtitle">Unidad seleccionada</p>
+        </div>
+        <button class="drawer-close-btn" id="btnCloseExportModal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <p style="font-size: 0.84rem; color: var(--text-secondary); margin-bottom: 1.15rem;">
+        Seleccione el formato en el que desea obtener el informe integral (incluye todos los suelos asociados, perfiles modales y análisis físico-químicos):
+      </p>
+
+      <div class="export-options-list">
+        <!-- Opción 1: Ficha PDF / Imprimible -->
+        <div class="export-option-card" id="optExportPdf">
+          <div class="export-option-icon pdf">
+            <i data-lucide="file-text"></i>
+          </div>
+          <div class="export-option-info">
+            <h4>Ficha Técnica Completa (PDF / Documento)</h4>
+            <p>Informe estructurado para imprimir o guardar en PDF con todos los suelos, perfiles estratigráficos y tablas de laboratorio.</p>
+          </div>
+          <i data-lucide="external-link" class="export-arrow"></i>
+        </div>
+
+        <!-- Opción 2: Documento HTML Offline -->
+        <div class="export-option-card" id="optExportHtml">
+          <div class="export-option-icon html">
+            <i data-lucide="code-2"></i>
+          </div>
+          <div class="export-option-info">
+            <h4>Archivo HTML Autónomo (Offline)</h4>
+            <p>Descarga la ficha completa como archivo web independiente para abrir en cualquier dispositivo sin conexión.</p>
+          </div>
+          <i data-lucide="download" class="export-arrow"></i>
+        </div>
+
+        <!-- Opción 3: Laboratorio en CSV / Excel -->
+        <div class="export-option-card" id="optExportCsv">
+          <div class="export-option-icon csv">
+            <i data-lucide="table"></i>
+          </div>
+          <div class="export-option-info">
+            <h4>Datos de Laboratorio (CSV / Excel)</h4>
+            <p>Exporta las tablas analíticas físico-químicas en formato tabular para Excel o software estadístico.</p>
+          </div>
+          <i data-lucide="download" class="export-arrow"></i>
+        </div>
+
+        <!-- Opción 4: Base de datos JSON -->
+        <div class="export-option-card" id="optExportJson">
+          <div class="export-option-icon json">
+            <i data-lucide="database"></i>
+          </div>
+          <div class="export-option-info">
+            <h4>Registro Científico en JSON</h4>
+            <p>Estructura de datos cruda completa de la asociación y geometría cartográfica.</p>
+          </div>
+          <i data-lucide="download" class="export-arrow"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       Modal Informativo / Acerca de
+       ========================================================================= -->
+  <div class="modal-overlay" id="infoModal">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <h2>Atlas Digital de Suelos del NOA</h2>
+        <button class="drawer-close-btn" id="btnCloseModal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <p style="color: var(--accent); font-weight: 600; font-size: 0.9rem;">
+        Provincias de Salta y Jujuy — República Argentina
+      </p>
+      <p>
+        Este dashboard interactivo integra la cartografía digital y la totalidad de los datos analíticos del estudio fundacional 
+        <em>"Los Suelos del NOA (Salta y Jujuy)"</em>, publicado por Nadir A. y Chafatinos T. (1990) y adecuado al Sistema de Información Geográfica (SIGSSSJ, Ediciones INTA 2009, ISBN 978-987-25050-8-0).
+      </p>
+      <div class="cajita" style="margin-bottom: 1rem;">
+        <div class="cajita-title"><i data-lucide="database"></i> Datos Integrados Dinámicamente</div>
+        <ul style="padding-left: 1.25rem; font-size: 0.84rem; color: #cbd5e1; line-height: 1.6;">
+          <li><strong>784 polígonos cartográficos</strong> georreferenciados con cálculo exacto de superficie en km² y hectáreas.</li>
+          <li><strong>216 unidades cartográficas</strong> extraídas integralmente de los informes científicos (100% libre de PDFs).</li>
+          <li><strong>Perfil estratigráfico visual</strong> de horizontes modales (color Munsell, textura de campo, estructura).</li>
+          <li><strong>Análisis físico-químicos de laboratorio</strong>: curvas de pH, materia orgánica %, granulometría (arena/limo/arcilla), capacidad de intercambio catiónico (CIC), bases intercambiables (Ca, Mg, Na, K) y PSI.</li>
+        </ul>
+      </div>
+      <p style="font-size: 0.78rem; color: var(--text-muted);">
+        Desarrollado para libre consulta y divulgación científica con capacidades de publicación estática directa en GitHub Pages.
+      </p>
+    </div>
+  </div>
+
+  <!-- Aplicación Principal JS -->
+  <script src="js/app.js?v=5"></script>
+</body>
+</html>
