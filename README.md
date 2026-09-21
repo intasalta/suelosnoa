@@ -6,7 +6,7 @@ Dashboard cartográfico e interactivo de los suelos de las provincias de **Salta
 
 ---
 
-## 🚀 Características Principales ("Nada de PDFs")
+## 🚀 Características Principales
 
 - **Cartografía Digital Interactiva**: 784 polígonos edafológicos georreferenciados con cálculo exacto de superficie en km² y hectáreas.
 - **216 Unidades Integradas Dinámicamente**: Los 216 informes PDF fueron transformados en un catálogo estructurado JSON de acceso instantáneo.
