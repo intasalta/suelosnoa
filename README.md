@@ -22,7 +22,7 @@ Dashboard cartográfico e interactivo de los suelos de las provincias de **Salta
   - Régimen térmico, lluvias anuales (mm) y comunidades vegetales nativas características.
   - Diagnóstico agronómico y recomendaciones de manejo estructural de suelos.
   - Desglose de suelos asociados (Dominantes, Subordinados e Inclusiones).
-  - **Perfil estratigráfico visual a escala** de horizontes (colores Munsell realistas, consistencia, estructura).
+  - **Perfil modal visual a escala** de horizontes (colores Munsell realistas, consistencia, estructura).
   - **Gráficos interactivos de laboratorio**: curva de pH y materia orgánica en profundidad, textura granulométrica (arena/limo/arcilla) y capacidad de intercambio catiónico (CIC con bases Ca, Mg, Na, K).
 - **Búsqueda Predictiva en Tiempo Real**: Búsqueda instantánea por nombre de suelo, código de nomenclatura o localidad.
 - **Exportación Limpia**: Botón para imprimir o generar ficha técnica en PDF nativo sin elementos superfluos del mapa.
