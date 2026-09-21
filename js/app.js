@@ -1300,7 +1300,7 @@
           <!-- Perfil Modal de este suelo -->
           ${s.perfil_modal && s.perfil_modal.length > 0 ? `
             <div style="margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
-              <h4 style="font-size: 14px; color: #1e293b; margin-bottom: 10px;">Perfil Modal Estratigráfico (Horizontes):</h4>
+              <h4 style="font-size: 14px; color: #1e293b; margin-bottom: 10px;">Perfil Modal (Horizontes):</h4>
               <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
                 <thead>
                   <tr style="background: #e2e8f0; color: #1e293b;">
